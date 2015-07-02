@@ -294,6 +294,7 @@ class AbstractViewHelperTest extends UnitTestCase {
 			array(new ArgumentDefinition('test', 'DateTime', '', TRUE), new \ArrayIterator(array('bar'))),
 			array(new ArgumentDefinition('test', 'DateTime', '', TRUE), 'test'),
 			array(new ArgumentDefinition('test', 'integer', '', TRUE), new \ArrayIterator(array('bar'))),
+			array(new ArgumentDefinition('test', 'object', '', TRUE), 'test'),
 		);
 	}
 
@@ -317,8 +318,15 @@ class AbstractViewHelperTest extends UnitTestCase {
 		$compiler = new TemplateCompiler();
 		$result = $viewHelper->compile('foobar', 'baz', $init, $node, $compiler);
 		$this->assertEmpty($init);
-		$this->assertEquals('$renderingContext->getViewHelperResolver()->resolveViewHelperInvoker(\'' . get_class($viewHelper) .
-			'\')->invoke(\'' . get_class($viewHelper) . '\', foobar, $renderingContext, baz)', $result);
+		$this->assertEquals(get_class($viewHelper) . '::renderStatic(foobar, baz, $renderingContext)', $result);
+	}
+
+	/**
+	 * @test
+	 */
+	public function testDefaultResetStateMethodDoesNothing() {
+		$viewHelper = $this->getAccessibleMock('NamelessCoder\Fluid\Core\ViewHelper\AbstractViewHelper', array('dummy'), array(), '', FALSE);
+		$this->assertNull($viewHelper->resetState());
 	}
 
 }
