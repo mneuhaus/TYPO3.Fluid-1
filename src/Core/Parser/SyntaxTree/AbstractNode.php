@@ -22,6 +22,11 @@ abstract class AbstractNode implements NodeInterface {
 	protected $childNodes = array();
 
 	/**
+	 * @var string
+	 */
+	protected $templateReferenceSnippet;
+
+	/**
 	 * Evaluate all child nodes and return the evaluated results.
 	 *
 	 * @param RenderingContextInterface $renderingContext
@@ -48,11 +53,17 @@ abstract class AbstractNode implements NodeInterface {
 	 */
 	protected function evaluateChildNode(NodeInterface $node, RenderingContextInterface $renderingContext, $cast) {
 		$output = $node->evaluate($renderingContext);
-		if ($cast && is_object($output)) {
-			if (!method_exists($output, '__toString')) {
-				throw new Parser\Exception('Cannot cast object of type "' . get_class($output) . '" to string.', 1273753083);
+		if ($cast) {
+			if (is_object($output)) {
+				if (!method_exists($output, '__toString')) {
+					throw new Parser\Exception('Cannot cast object of type "' . get_class($output) . '" to string.', 1273753083);
+				}
+				$output = (string) $output;
 			}
-			$output = (string) $output;
+
+			if (is_array($output)) {
+				throw new Parser\Exception('Cannot cast array to string: ' . $node->templateReferenceSnippet, 1439150672);
+			}
 		}
 		return $output;
 	}
@@ -75,5 +86,19 @@ abstract class AbstractNode implements NodeInterface {
 	 */
 	public function addChildNode(NodeInterface $childNode) {
 		$this->childNodes[] = $childNode;
+	}
+
+	/**
+	 * @param string $templateReferenceSnippet
+	 */
+	public function setTemplateReferenceSnippet($templateReferenceSnippet) {
+		$this->templateReferenceSnippet = $templateReferenceSnippet;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getTemplateReferenceSnippet() {
+		return $this->templateReferenceSnippet;
 	}
 }

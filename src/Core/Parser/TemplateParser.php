@@ -200,7 +200,8 @@ class TemplateParser {
 					$matchedVariables['NamespaceIdentifier'],
 					$matchedVariables['MethodIdentifier'],
 					$matchedVariables['Attributes'],
-					($matchedVariables['Selfclosing'] === '' ? FALSE : TRUE)
+					($matchedVariables['Selfclosing'] === '' ? FALSE : TRUE),
+					$matchedVariables[0]
 				);
 				if ($viewHelperWasOpened === TRUE) {
 					continue;
@@ -235,9 +236,9 @@ class TemplateParser {
 	 * @param boolean $selfclosing true, if the tag is a self-closing tag.
 	 * @return boolean
 	 */
-	protected function openingViewHelperTagHandler(ParsingState $state, $namespaceIdentifier, $methodIdentifier, $arguments, $selfclosing) {
+	protected function openingViewHelperTagHandler(ParsingState $state, $namespaceIdentifier, $methodIdentifier, $arguments, $selfclosing, $templateReferenceSnippet) {
 		$argumentsObjectTree = $this->parseArguments($arguments);
-		$viewHelperWasOpened = $this->initializeViewHelperAndAddItToStack($state, $namespaceIdentifier, $methodIdentifier, $argumentsObjectTree);
+		$viewHelperWasOpened = $this->initializeViewHelperAndAddItToStack($state, $namespaceIdentifier, $methodIdentifier, $argumentsObjectTree, $templateReferenceSnippet);
 
 		if ($viewHelperWasOpened === TRUE && $selfclosing === TRUE) {
 			$node = $state->popNodeFromStack();
@@ -260,7 +261,7 @@ class TemplateParser {
 	 * @return boolean whether the viewHelper was found and added to the stack or not
 	 * @throws Exception
 	 */
-	protected function initializeViewHelperAndAddItToStack(ParsingState $state, $namespaceIdentifier, $methodIdentifier, $argumentsObjectTree) {
+	protected function initializeViewHelperAndAddItToStack(ParsingState $state, $namespaceIdentifier, $methodIdentifier, $argumentsObjectTree, $templateReferenceSnippet) {
 		if ($this->viewHelperResolver->isNamespaceValid($namespaceIdentifier, $methodIdentifier) === FALSE) {
 			return FALSE;
 		}
@@ -271,6 +272,8 @@ class TemplateParser {
 			$argumentsObjectTree,
 			$state
 		);
+		$currentViewHelperNode->setTemplateReferenceSnippet($templateReferenceSnippet);
+		// var_dump($currentViewHelperNode);
 		$viewHelper = $currentViewHelperNode->getUninitializedViewHelper();
 
 		$this->callInterceptor($currentViewHelperNode, InterceptorInterface::INTERCEPT_OPENING_VIEWHELPER, $state);
@@ -326,7 +329,7 @@ class TemplateParser {
 	 * @param string $additionalViewHelpersString
 	 * @return void
 	 */
-	protected function objectAccessorHandler(ParsingState $state, $objectAccessorString, $delimiter, $viewHelperString, $additionalViewHelpersString) {
+	protected function objectAccessorHandler(ParsingState $state, $objectAccessorString, $delimiter, $viewHelperString, $additionalViewHelpersString, $templateReferenceSnippet) {
 		$viewHelperString .= $additionalViewHelpersString;
 		$numberOfViewHelpers = 0;
 
@@ -347,7 +350,7 @@ class TemplateParser {
 				} else {
 					$arguments = array();
 				}
-				$viewHelperWasAdded = $this->initializeViewHelperAndAddItToStack($state, $singleMatch['NamespaceIdentifier'], $singleMatch['MethodIdentifier'], $arguments);
+				$viewHelperWasAdded = $this->initializeViewHelperAndAddItToStack($state, $singleMatch['NamespaceIdentifier'], $singleMatch['MethodIdentifier'], $arguments, $templateReferenceSnippet);
 				if ($viewHelperWasAdded === TRUE) {
 					$numberOfViewHelpers++;
 				}
@@ -362,6 +365,7 @@ class TemplateParser {
 				$accessors = array();
 			}
 			$node = new ObjectAccessorNode($objectAccessorString, $accessors);
+			$node->setTemplateReferenceSnippet($templateReferenceSnippet);
 			$this->callInterceptor($node, InterceptorInterface::INTERCEPT_OBJECTACCESSOR, $state);
 			$state->getNodeFromStack()->addChildNode($node);
 		}
@@ -483,7 +487,8 @@ class TemplateParser {
 					$matchedVariables['Object'],
 					$matchedVariables['Delimiter'],
 					(isset($matchedVariables['ViewHelper']) ? $matchedVariables['ViewHelper'] : ''),
-					(isset($matchedVariables['AdditionalViewHelpers']) ? $matchedVariables['AdditionalViewHelpers'] : '')
+					(isset($matchedVariables['AdditionalViewHelpers']) ? $matchedVariables['AdditionalViewHelpers'] : ''),
+					$matchedVariables[0]
 				);
 			} elseif (
 				$context === self::CONTEXT_INSIDE_VIEWHELPER_ARGUMENTS

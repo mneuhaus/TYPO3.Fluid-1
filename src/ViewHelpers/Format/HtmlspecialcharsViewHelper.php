@@ -6,6 +6,7 @@ namespace NamelessCoder\Fluid\ViewHelpers\Format;
  * See LICENSE.txt that was shipped with this package.
  */
 
+use NamelessCoder\Fluid\Core\Parser;
 use NamelessCoder\Fluid\Core\Compiler\TemplateCompiler;
 use NamelessCoder\Fluid\Core\Parser\SyntaxTree\NodeInterface;
 use NamelessCoder\Fluid\Core\Parser\SyntaxTree\ViewHelperNode;
@@ -73,6 +74,11 @@ class HtmlspecialcharsViewHelper extends AbstractViewHelper {
 		$doubleEncode = $this->arguments['doubleEncode'];
 		if ($value === NULL) {
 			$value = $this->renderChildren();
+		}
+
+		if (is_array($value)) {
+			$nodeArguments = $this->viewHelperNode->getArguments();
+			throw new Parser\Exception('Cannot cast array to string: ' . $nodeArguments['value']->getTemplateReferenceSnippet(), 1439148017);
 		}
 
 		if (!is_string($value) && !(is_object($value) && method_exists($value, '__toString'))) {
